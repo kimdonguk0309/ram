@@ -1,0 +1,69 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define ROWS 10000
+#define COLS 10000
+
+// 2차원 희소 메모리 셀 구조
+typedef struct Cell {
+    int value;
+} Cell;
+
+// 2차원 포인터 배열 (희소 배열처럼 동적 할당)
+Cell*** memory;
+
+void init_memory() {
+    memory = (Cell***)calloc(ROWS, sizeof(Cell**));
+}
+
+void set_value(int row, int col, int value) {
+    if (row >= ROWS || col >= COLS) return;
+
+    if (memory[row] == NULL) {
+        memory[row] = (Cell**)calloc(COLS, sizeof(Cell*));
+    }
+
+    if (memory[row][col] == NULL) {
+        memory[row][col] = (Cell*)malloc(sizeof(Cell));
+    }
+
+    memory[row][col]->value = value;
+}
+
+int get_value(int row, int col) {
+    if (row >= ROWS || col >= COLS) return 0;
+
+    if (memory[row] == NULL || memory[row][col] == NULL) {
+        return 0; // 기본값
+    }
+
+    return memory[row][col]->value;
+}
+
+void free_memory() {
+    for (int i = 0; i < ROWS; i++) {
+        if (memory[i]) {
+            for (int j = 0; j < COLS; j++) {
+                if (memory[i][j]) {
+                    free(memory[i][j]);
+                }
+            }
+            free(memory[i]);
+        }
+    }
+    free(memory);
+}
+
+int main() {
+    init_memory();
+
+    set_value(123, 456, 789);
+    printf("Value at (123,456): %d\n", get_value(123, 456));
+
+    set_value(9999, 9999, 42);
+    printf("Value at (9999,9999): %d\n", get_value(9999, 9999));
+
+    free_memory();
+    return 0;
+}
