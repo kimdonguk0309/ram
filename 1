@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#define MEM_SIZE_X 4096  // X축 메모리 크기
+#define MEM_SIZE_Y 4096  // Y축 메모리 크기
+
+// 셀 정의 (64비트 데이터)
+typedef struct {
+    uint64_t value;
+} MemoryCell;
+
+// 2차원 메모리 정의 (정적 할당 버전)
+MemoryCell** memory;
+
+// 메모리 초기화
+void init_memory() {
+    memory = (MemoryCell**)malloc(MEM_SIZE_X * sizeof(MemoryCell*));
+    for (int i = 0; i < MEM_SIZE_X; i++) {
+        memory[i] = (MemoryCell*)calloc(MEM_SIZE_Y, sizeof(MemoryCell));
+    }
+}
+
+// 메모리 해제
+void free_memory() {
+    for (int i = 0; i < MEM_SIZE_X; i++) {
+        free(memory[i]);
+    }
+    free(memory);
+}
+
+// 값 설정
+void set_mem(int x, int y, uint64_t value) {
+    if (x >= 0 && x < MEM_SIZE_X && y >= 0 && y < MEM_SIZE_Y) {
+        memory[x][y].value = value;
+    }
+}
+
+// 값 가져오기
+uint64_t get_mem(int x, int y) {
+    if (x >= 0 && x < MEM_SIZE_X && y >= 0 && y < MEM_SIZE_Y) {
+        return memory[x][y].value;
+    }
+    return 0;
+}
