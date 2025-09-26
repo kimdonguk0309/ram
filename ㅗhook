@@ -1,0 +1,27 @@
+import mysql.connector
+from unittest.mock import patch
+
+# 원본 connect 함수를 후킹
+original_connect = mysql.connector.connect
+
+def hooked_connect(*args, **kwargs):
+    print("[후킹] MySQL 연결 시도 중...")
+    print(f"호스트: {kwargs.get('host')}")
+    print(f"사용자: {kwargs.get('user')}")
+
+    # 인증 정보를 무시하고 강제로 연결 (예: 테스트용)
+    kwargs['password'] = ''  # 비밀번호 무시
+    kwargs['user'] = 'root'  # 강제 사용자 설정
+
+    # 원본 함수 호출
+    return original_connect(*args, **kwargs)
+
+# 후킹 적용
+mysql.connector.connect = hooked_connect
+
+# 이후 mysql.connector.connect() 호출 시 후킹된 함수가 실행됨
+conn = mysql.connector.connect(
+    host='127.0.0.1',
+    user='dummy',
+    password='wrong_password'
+)
